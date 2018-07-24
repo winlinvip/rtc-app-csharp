@@ -25,6 +25,57 @@ namespace rtc_app_csharp
 
     class Program
     {
+        static ChannelAuth CreateChannel(
+            string appid, string channelId,
+            string regionId, string accessKeyId, 
+            string accessKeySecret)
+        {
+            IClientProfile profile = DefaultProfile.GetProfile(
+                regionId, accessKeyId, accessKeySecret);
+            IAcsClient client = new DefaultAcsClient(profile);
+
+            CreateChannelRequest request = new CreateChannelRequest();
+            request.AppId = appid;
+            request.ChannelId = channelId;
+
+            CreateChannelResponse response = client.GetAcsResponse(request);
+
+            ChannelAuth auth = new ChannelAuth();
+            auth.AppId = appid;
+            auth.ChannelId = channelId;
+            auth.Nonce = response.Nonce;
+            auth.Timestamp = (Int64)response.Timestamp;
+            auth.ChannelKey = response.ChannelKey;
+
+            return auth;
+        }
+
+        static string BuildToken(
+            string channelId, string channelKey, 
+            string appid, string userId, string session, 
+            string nonce, Int64 timestamp)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(channelId).Append(channelKey);
+            sb.Append(appid).Append(userId);
+            sb.Append(session).Append(nonce).Append(timestamp);
+
+            using (SHA256 hash = SHA256.Create())
+            {
+                byte[] checksum = hash.ComputeHash(
+                    Encoding.ASCII.GetBytes(sb.ToString()));
+
+                sb = new StringBuilder();
+                foreach (byte b in checksum)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
+
+                string token = sb.ToString();
+                return token;
+            }
+        }
+
         static Dictionary<string, ChannelAuth> channels = new Dictionary<string, ChannelAuth>();
 
         static void Main(string[] args)
@@ -175,46 +226,6 @@ namespace rtc_app_csharp
             catch (Exception ex)
             {
                 responseWrite(context, HttpStatusCode.InternalServerError, ex.Message);
-            }
-        }
-
-        static ChannelAuth CreateChannel(string appid, string channelId, string regionId, string accessKeyId, string accessKeySecret)
-        {
-            IClientProfile profile = DefaultProfile.GetProfile(regionId, accessKeyId, accessKeySecret);
-            IAcsClient client = new DefaultAcsClient(profile);
-
-            CreateChannelRequest request = new CreateChannelRequest();
-            request.AppId = appid;
-            request.ChannelId = channelId;
-
-            CreateChannelResponse response = client.GetAcsResponse(request);
-
-            ChannelAuth auth = new ChannelAuth();
-            auth.AppId = appid;
-            auth.ChannelId = channelId;
-            auth.Nonce = response.Nonce;
-            auth.Timestamp = (Int64)response.Timestamp;
-            auth.ChannelKey = response.ChannelKey;
-
-            return auth;
-        }
-
-        static string BuildToken(string channelId, string channelKey, string appid, string userId, string session, string nonce, Int64 timestamp)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(channelId).Append(channelKey).Append(appid).Append(userId);
-            sb.Append(session).Append(nonce).Append(timestamp);
-
-            using (SHA256 hash = SHA256.Create())
-            {
-                byte[] checksum = hash.ComputeHash(Encoding.ASCII.GetBytes(sb.ToString()));
-
-                sb = new StringBuilder();
-                foreach (byte b in checksum)
-                {
-                    sb.Append(b.ToString("x2"));
-                }
-                return sb.ToString();
             }
         }
 
