@@ -6,4 +6,11 @@
     <RootNamespace>rtc_app_csharp</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\aliyun-openapi-net-sdk\aliyun-net-sdk-core\aliyun-net-sdk-core.vs2017.csproj" />
+    <ProjectReference Include="..\aliyun-openapi-net-sdk\aliyun-net-sdk-rtc\aliyun-net-sdk-rtc.vs2017.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
 </Project>
