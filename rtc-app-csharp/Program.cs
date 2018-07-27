@@ -165,29 +165,14 @@ namespace rtc_app_csharp
             System.Console.WriteLine(String.Format("Request channelId={0}, user={1}, appid={2}", channelId, user, appid));
 
             ChannelAuth auth = null;
-            using (Mutex locker = new Mutex())
+            try
             {
-                locker.WaitOne();
-
-                if (channels.ContainsKey(channelUrl))
-                {
-                    auth = channels[channelUrl];
-                    return;
-                }
-
-                try
-                {
-                    auth = CreateChannel(appid, channelId, regionId, accessKeyId, accessKeySecret);
-                    channels[channelUrl] = auth;
-                    System.Console.WriteLine(String.Format(
-                        "Create channelId={0}, nonce={1}, timestamp={2}, channelKey={3}",
-                        channelId, auth.Nonce, auth.Timestamp, auth.ChannelKey));
-                }
-                catch (Exception ex)
-                {
-                    responseWrite(context, HttpStatusCode.InternalServerError, ex.Message);
-                    return;
-                }
+                auth = CreateOrGetChannelAuth(channelUrl, appid, channelId, regionId, accessKeyId, accessKeySecret);
+            }
+            catch (Exception ex)
+            {
+                responseWrite(context, HttpStatusCode.InternalServerError, ex.Message);
+                return;
             }
 
             string userId = Guid.NewGuid().ToString();
@@ -226,6 +211,26 @@ namespace rtc_app_csharp
             catch (Exception ex)
             {
                 responseWrite(context, HttpStatusCode.InternalServerError, ex.Message);
+            }
+        }
+
+        static ChannelAuth CreateOrGetChannelAuth(string channelUrl, string appid, string channelId, string regionId, string accessKeyId, string accessKeySecret)
+        {
+            using (Mutex locker = new Mutex())
+            {
+                locker.WaitOne();
+
+                if (channels.ContainsKey(channelUrl))
+                {
+                    return channels[channelUrl];
+                }
+
+                ChannelAuth auth = CreateChannel(appid, channelId, regionId, accessKeyId, accessKeySecret);
+                channels[channelUrl] = auth;
+                System.Console.WriteLine(String.Format(
+                    "Create channelId={0}, nonce={1}, timestamp={2}, channelKey={3}",
+                    channelId, auth.Nonce, auth.Timestamp, auth.ChannelKey));
+                return auth;
             }
         }
 
