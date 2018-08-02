@@ -71,6 +71,6 @@ git clone https://github.com/aliyun/aliyun-openapi-net-sdk.git
 
 ## History
 
-* [0dc5727](), Support recover for some OpenAPI error.
+* [0dc5727](https://github.com/winlinvip/rtc-app-csharp/commit/0dc572712c55fd0fcdfc9762d0cf752995488da2), Support recover for some OpenAPI error.
 * [1b7aac5](https://github.com/winlinvip/rtc-app-csharp/commit/1b7aac5a065f52f663e1b4474eeee6b099124dc8), Set endpoint to get correct error.
 * Support create channel and sign user token.

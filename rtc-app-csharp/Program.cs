@@ -231,6 +231,8 @@ namespace rtc_app_csharp
 
             try
             {
+                DateTime starttime = DateTime.Now;
+
                 ChannelAuth auth = null;
                 using (Mutex locker = new Mutex())
                 {
@@ -252,8 +254,8 @@ namespace rtc_app_csharp
                         }
 
                         System.Console.WriteLine(String.Format(
-                            "CreateChannel requestId={4}, channelId={0}, nonce={1}, timestamp={2}, channelKey={3}, recovered={5}",
-                            channelId, auth.Nonce, auth.Timestamp, auth.ChannelKey, auth.RequestId, auth.Recovered));
+                            "CreateChannel requestId={4}, cost={6}ms, channelId={0}, nonce={1}, timestamp={2}, channelKey={3}, recovered={5}",
+                            channelId, auth.Nonce, auth.Timestamp, auth.ChannelKey, auth.RequestId, auth.Recovered, DateTime.Now.Subtract(starttime).Milliseconds));
                     }
                 }
 
@@ -264,6 +266,8 @@ namespace rtc_app_csharp
                 string username = String.Format(
                     "{0}?appid={1}&session={2}&channel={3}&nonce={4}&timestamp={5}",
                     userId, appid, session, channelId, auth.Nonce, auth.Timestamp);
+                System.Console.WriteLine("Sign cost={5}ms, user={0}, userId={1}, session={2}, token={3}, channelKey={4}",
+                    user, userId, session, token, auth.ChannelKey, DateTime.Now.Subtract(starttime).Milliseconds);
 
                 JObject rturn = new JObject();
                 rturn.Add("username", username);
