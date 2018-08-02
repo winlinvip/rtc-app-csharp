@@ -28,14 +28,16 @@ namespace rtc_app_csharp
 
     class Program
     {
-        static ChannelAuth RecoverForError(ClientException ex, string appId, string channelId)
+        static ChannelAuth RecoverForError(Exception ex, string appId, string channelId)
         {
             bool fatal = false;
             string requestId = "";
-            if (ex != null && ex.ErrorCode != null)
+
+            ClientException cex = ex as ClientException;
+            if (cex != null && cex.ErrorCode != null)
             {
-                requestId = ex.RequestId;
-                string code = ex.ErrorCode;
+                requestId = cex.RequestId;
+                string code = cex.ErrorCode;
                 if (code == "IllegalOperationApp")
                 {
                     fatal = true;
@@ -52,7 +54,6 @@ namespace rtc_app_csharp
 
             if (fatal)
             {
-                System.Console.WriteLine("RequestId={0}, {1}", ex.RequestId, ex.ToString());
                 throw ex;
             }
 
@@ -111,7 +112,7 @@ namespace rtc_app_csharp
 
                 return auth;
             }
-            catch (ClientException ex)
+            catch (Exception ex)
             {
                 return RecoverForError(ex, appId, channelId);
             }
