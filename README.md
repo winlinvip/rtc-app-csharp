@@ -73,6 +73,6 @@ git clone https://github.com/aliyun/aliyun-openapi-net-sdk.git
 
 * [391badf](https://github.com/winlinvip/rtc-app-csharp/commit/391badfba9e8059c90476c9fab20d8ab41b90e15), Use HTTP, x3 times faster than HTTPS.
 * [8f15c74](https://github.com/winlinvip/rtc-app-csharp/commit/8f15c74804437f5e77f335bccdf62147b396ef2a), Log the request id and cost in ms.
-* [0dc5727](https://github.com/winlinvip/rtc-app-csharp/commit/0dc572712c55fd0fcdfc9762d0cf752995488da2), Support recover for some OpenAPI error.
+* [0dc5727](https://github.com/winlinvip/rtc-app-csharp/commit/0dc572712c55fd0fcdfc9762d0cf752995488da2), [55ea589](https://github.com/winlinvip/rtc-app-csharp/commit/55ea5895819a87036d19482bf522185a641e7e52), Support recover for some OpenAPI error.
 * [1b7aac5](https://github.com/winlinvip/rtc-app-csharp/commit/1b7aac5a065f52f663e1b4474eeee6b099124dc8), Set endpoint to get correct error.
 * Support create channel and sign user token.
