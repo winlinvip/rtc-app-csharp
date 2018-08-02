@@ -32,19 +32,26 @@ namespace rtc_app_csharp
         {
             bool fatal = false;
             string requestId = "";
-            if (ex != null && ex.ErrorCode != null) {
+            if (ex != null && ex.ErrorCode != null)
+            {
                 requestId = ex.RequestId;
                 string code = ex.ErrorCode;
-                if (code == "IllegalOperationApp") {
+                if (code == "IllegalOperationApp")
+                {
                     fatal = true;
-                } else if (code.StartsWith("InvalidAccessKeyId", StringComparison.Ordinal)) {
+                }
+                else if (code.StartsWith("InvalidAccessKeyId", StringComparison.Ordinal))
+                {
                     fatal = true;
-                } else if (code == "SignatureDoesNotMatch") {
+                }
+                else if (code == "SignatureDoesNotMatch")
+                {
                     fatal = true;
                 }
             }
 
-            if (fatal) {
+            if (fatal)
+            {
                 System.Console.WriteLine("RequestId={0}, {1}", ex.RequestId, ex.ToString());
                 throw ex;
             }
@@ -108,8 +115,8 @@ namespace rtc_app_csharp
         }
 
         static string CreateToken(
-            string channelId, string channelKey, 
-            string appid, string userId, string session, 
+            string channelId, string channelKey,
+            string appid, string userId, string session,
             string nonce, Int64 timestamp)
         {
             StringBuilder sb = new StringBuilder();
