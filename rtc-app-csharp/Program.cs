@@ -95,6 +95,9 @@ namespace rtc_app_csharp
                 //      time, so it's good for performance to set the endpoint.
                 DefaultProfile.AddEndpoint(regionId, regionId, request.Product, endpoint);
 
+                // Use HTTP, x3 times faster than HTTPS.
+                request.Protocol = Aliyun.Acs.Core.Http.ProtocolType.HTTP;
+
                 CreateChannelResponse response = client.GetAcsResponse(request);
 
                 ChannelAuth auth = new ChannelAuth();
