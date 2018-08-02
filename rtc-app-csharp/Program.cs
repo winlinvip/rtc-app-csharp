@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using Aliyun.Acs.Core;
 using Aliyun.Acs.Core.Profile;
 using Aliyun.Acs.rtc.Model.V20180111;
+using Aliyun.Acs.Core.Exceptions;
 
 using System.Security.Cryptography;
 
@@ -21,43 +22,89 @@ namespace rtc_app_csharp
         public string Nonce;
         public Int64 Timestamp;
         public string ChannelKey;
+        public bool Recovered;
+        public string RequestId;
     }
 
     class Program
     {
-        static ChannelAuth CreateChannel(
-            string appid, string channelId,
-            string regionId, string endpoint, string accessKeyId, 
-            string accessKeySecret)
+        static ChannelAuth RecoverForError(ClientException ex, string appId, string channelId)
         {
-            IClientProfile profile = DefaultProfile.GetProfile(
-                regionId, accessKeyId, accessKeySecret);
-            IAcsClient client = new DefaultAcsClient(profile);
+            bool fatal = false;
+            string requestId = "";
+            if (ex != null && ex.ErrorCode != null) {
+                requestId = ex.RequestId;
+                string code = ex.ErrorCode;
+                if (code == "IllegalOperationApp") {
+                    fatal = true;
+                } else if (code.StartsWith("InvalidAccessKeyId", StringComparison.Ordinal)) {
+                    fatal = true;
+                } else if (code == "SignatureDoesNotMatch") {
+                    fatal = true;
+                }
+            }
 
-            CreateChannelRequest request = new CreateChannelRequest();
-            request.AppId = appid;
-            request.ChannelId = channelId;
+            if (fatal) {
+                System.Console.WriteLine("RequestId={0}, {1}", ex.RequestId, ex.ToString());
+                throw ex;
+            }
 
-            // Strongly recomment to set the RTC endpoint,
-            // because the exception is not the "right" one if not set.
-            // For example, if access-key-id is invalid:
-            //      1. if endpoint is set, exception is InvalidAccessKeyId.NotFound
-            //      2. if endpoint isn't set, exception is SDK.InvalidRegionId
-            // that's caused by query endpoint failed.
-            // @remark SDk will cache endpoints, however it will query endpoint for the first
-            //      time, so it's good for performance to set the endpoint.
-            DefaultProfile.AddEndpoint(regionId, regionId, request.Product, endpoint);
-
-            CreateChannelResponse response = client.GetAcsResponse(request);
+            string recovered = "RCV-" + Guid.NewGuid().ToString();
+            System.Console.WriteLine("Recover from {0}, recovered={1}", ex.ToString(), recovered);
 
             ChannelAuth auth = new ChannelAuth();
-            auth.AppId = appid;
+            auth.AppId = appId;
             auth.ChannelId = channelId;
-            auth.Nonce = response.Nonce;
-            auth.Timestamp = (Int64)response.Timestamp;
-            auth.ChannelKey = response.ChannelKey;
+            auth.Nonce = recovered;
+            auth.Timestamp = 0;
+            auth.ChannelKey = recovered;
+            auth.Recovered = true;
 
             return auth;
+        }
+
+        static ChannelAuth CreateChannel(
+            string appId, string channelId,
+            string regionId, string endpoint, string accessKeyId,
+            string accessKeySecret)
+        {
+            try
+            {
+                IClientProfile profile = DefaultProfile.GetProfile(
+                    regionId, accessKeyId, accessKeySecret);
+                IAcsClient client = new DefaultAcsClient(profile);
+
+                CreateChannelRequest request = new CreateChannelRequest();
+                request.AppId = appId;
+                request.ChannelId = channelId;
+
+                // Strongly recomment to set the RTC endpoint,
+                // because the exception is not the "right" one if not set.
+                // For example, if access-key-id is invalid:
+                //      1. if endpoint is set, exception is InvalidAccessKeyId.NotFound
+                //      2. if endpoint isn't set, exception is SDK.InvalidRegionId
+                // that's caused by query endpoint failed.
+                // @remark SDk will cache endpoints, however it will query endpoint for the first
+                //      time, so it's good for performance to set the endpoint.
+                DefaultProfile.AddEndpoint(regionId, regionId, request.Product, endpoint);
+
+                CreateChannelResponse response = client.GetAcsResponse(request);
+
+                ChannelAuth auth = new ChannelAuth();
+                auth.AppId = appId;
+                auth.ChannelId = channelId;
+                auth.Nonce = response.Nonce;
+                auth.Timestamp = (Int64)response.Timestamp;
+                auth.ChannelKey = response.ChannelKey;
+                auth.Recovered = false;
+                auth.RequestId = response.RequestId;
+
+                return auth;
+            }
+            catch (ClientException ex)
+            {
+                return RecoverForError(ex, appId, channelId);
+            }
         }
 
         static string CreateToken(
@@ -164,7 +211,7 @@ namespace rtc_app_csharp
             }
 
             string url = context.Request.RawUrl;
-            if (!url.StartsWith("/app/v1/login"))
+            if (!url.StartsWith("/app/v1/login", StringComparison.Ordinal))
             {
                 responseWrite(context, HttpStatusCode.NotFound, String.Format("Invalid url {0}", url));
                 return;
@@ -189,10 +236,17 @@ namespace rtc_app_csharp
                     else
                     {
                         auth = CreateChannel(appid, channelId, regionId, endpoint, accessKeyId, accessKeySecret);
-                        channels[channelUrl] = auth;
+
+                        // If recovered from error, we should never cache it,
+                        // and we should try to request again next time.
+                        if (!auth.Recovered)
+                        {
+                            channels[channelUrl] = auth;
+                        }
+
                         System.Console.WriteLine(String.Format(
-                            "Create channelId={0}, nonce={1}, timestamp={2}, channelKey={3}",
-                            channelId, auth.Nonce, auth.Timestamp, auth.ChannelKey));
+                            "CreateChannel requestId={4}, channelId={0}, nonce={1}, timestamp={2}, channelKey={3}, recovered={5}",
+                            channelId, auth.Nonce, auth.Timestamp, auth.ChannelKey, auth.RequestId, auth.Recovered));
                     }
                 }
 
@@ -230,6 +284,7 @@ namespace rtc_app_csharp
             catch (Exception ex)
             {
                 responseWrite(context, HttpStatusCode.InternalServerError, ex.Message);
+                System.Console.WriteLine(ex.ToString());
             }
         }
 
