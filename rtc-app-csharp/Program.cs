@@ -118,10 +118,31 @@ namespace rtc_app_csharp
             }
         }
 
+        static string CreateUserId() 
+        {
+            return Guid.NewGuid().ToString();
+        }
+
+        static string CreateSession(
+            string appId, string channelId, string channelKey, string userId)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(appId).Append(channelId).Append(channelKey);
+            sb.Append(userId).Append(new DateTime().Millisecond);
+
+            using (SHA256 hash = SHA256.Create())
+            {
+                byte[] checksum = hash.ComputeHash(
+                    Encoding.ASCII.GetBytes(sb.ToString()));
+
+                string session = HexEncode(checksum);
+                return session;
+            }
+        }
+
         static string CreateToken(
-            string channelId, string channelKey,
-            string appid, string userId, string session,
-            string nonce, Int64 timestamp)
+            string channelId, string channelKey, string appid, string userId, 
+            string session, string nonce, Int64 timestamp)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(channelId).Append(channelKey);
@@ -132,16 +153,21 @@ namespace rtc_app_csharp
             {
                 byte[] checksum = hash.ComputeHash(
                     Encoding.ASCII.GetBytes(sb.ToString()));
-
-                sb = new StringBuilder();
-                foreach (byte b in checksum)
-                {
-                    sb.Append(b.ToString("x2"));
-                }
-
-                string token = sb.ToString();
+                
+                string token = HexEncode(checksum);
                 return token;
             }
+        }
+
+        static string HexEncode(byte[] bytes)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in bytes)
+            {
+                sb.Append(b.ToString("x2"));
+            }
+
+            return sb.ToString();
         }
 
         static Dictionary<string, ChannelAuth> channels = new Dictionary<string, ChannelAuth>();
@@ -263,10 +289,10 @@ namespace rtc_app_csharp
                     }
                 }
 
-                string userId = Guid.NewGuid().ToString();
-                string session = Guid.NewGuid().ToString();
-
-                string token = CreateToken(channelId, auth.ChannelKey, appid, userId, session, auth.Nonce, auth.Timestamp);
+                string userId = CreateUserId();
+                string session = CreateSession(appid, channelId, auth.ChannelKey, userId);
+                string token = CreateToken(channelId, auth.ChannelKey, appid, userId, session, 
+                    auth.Nonce, auth.Timestamp);
                 string username = String.Format(
                     "{0}?appid={1}&session={2}&channel={3}&nonce={4}&timestamp={5}",
                     userId, appid, session, channelId, auth.Nonce, auth.Timestamp);
