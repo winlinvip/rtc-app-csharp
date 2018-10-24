@@ -123,31 +123,14 @@ namespace rtc_app_csharp
             return Guid.NewGuid().ToString();
         }
 
-        static string CreateSession(
-            string appId, string channelId, string channelKey, string userId)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(appId).Append(channelId).Append(channelKey);
-            sb.Append(userId).Append(new DateTime().Millisecond);
-
-            using (SHA256 hash = SHA256.Create())
-            {
-                byte[] checksum = hash.ComputeHash(
-                    Encoding.ASCII.GetBytes(sb.ToString()));
-
-                string session = HexEncode(checksum);
-                return session;
-            }
-        }
-
         static string CreateToken(
             string channelId, string channelKey, string appid, string userId, 
-            string session, string nonce, Int64 timestamp)
+            string nonce, Int64 timestamp)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(channelId).Append(channelKey);
             sb.Append(appid).Append(userId);
-            sb.Append(session).Append(nonce).Append(timestamp);
+            sb.Append(nonce).Append(timestamp);
 
             using (SHA256 hash = SHA256.Create())
             {
@@ -290,14 +273,13 @@ namespace rtc_app_csharp
                 }
 
                 string userId = CreateUserId();
-                string session = CreateSession(appid, channelId, auth.ChannelKey, userId);
-                string token = CreateToken(channelId, auth.ChannelKey, appid, userId, session, 
+                string token = CreateToken(channelId, auth.ChannelKey, appid, userId, 
                     auth.Nonce, auth.Timestamp);
                 string username = String.Format(
-                    "{0}?appid={1}&session={2}&channel={3}&nonce={4}&timestamp={5}",
-                    userId, appid, session, channelId, auth.Nonce, auth.Timestamp);
-                System.Console.WriteLine("Sign cost={5}ms, user={0}, userId={1}, session={2}, token={3}, channelKey={4}",
-                    user, userId, session, token, auth.ChannelKey, DateTime.Now.Subtract(starttime).Milliseconds);
+                    "{0}?appid={1}&channel={2}&nonce={3}&timestamp={4}",
+                    userId, appid, channelId, auth.Nonce, auth.Timestamp);
+                System.Console.WriteLine("Sign cost={4}ms, user={0}, userId={1}, token={2}, channelKey={3}",
+                    user, userId, token, auth.ChannelKey, DateTime.Now.Subtract(starttime).Milliseconds);
 
                 JObject rturn = new JObject();
                 rturn.Add("username", username);
@@ -310,7 +292,6 @@ namespace rtc_app_csharp
                 rresponse.Add("appid", appid);
                 rresponse.Add("userid", userId);
                 rresponse.Add("gslb", rgslbs);
-                rresponse.Add("session", session);
                 rresponse.Add("token", token);
                 rresponse.Add("nonce", auth.Nonce);
                 rresponse.Add("timestamp", auth.Timestamp);
