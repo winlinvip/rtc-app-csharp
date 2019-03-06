@@ -118,13 +118,13 @@ namespace rtc_app_csharp
             }
         }
 
-        static string CreateUserId() 
+        static string CreateUserId()
         {
             return Guid.NewGuid().ToString();
         }
 
         static string CreateToken(
-            string channelId, string channelKey, string appid, string userId, 
+            string channelId, string channelKey, string appid, string userId,
             string nonce, Int64 timestamp)
         {
             StringBuilder sb = new StringBuilder();
@@ -136,7 +136,7 @@ namespace rtc_app_csharp
             {
                 byte[] checksum = hash.ComputeHash(
                     Encoding.ASCII.GetBytes(sb.ToString()));
-                
+
                 string token = HexEncode(checksum);
                 return token;
             }
@@ -204,6 +204,7 @@ namespace rtc_app_csharp
             using (HttpListener listener = new HttpListener())
             {
                 listener.Prefixes.Add(String.Format("http://localhost:{0}/", listen));
+                listener.Prefixes.Add(String.Format("http://127.0.0.1:{0}/", listen));
                 listener.Start();
 
                 while (true)
@@ -231,6 +232,7 @@ namespace rtc_app_csharp
             }
 
             string url = context.Request.RawUrl;
+            System.Console.WriteLine(String.Format("URL={0}", url));
             if (!url.StartsWith("/app/v1/login", StringComparison.Ordinal))
             {
                 responseWrite(context, HttpStatusCode.NotFound, String.Format("Invalid url {0}", url));
@@ -273,7 +275,7 @@ namespace rtc_app_csharp
                 }
 
                 string userId = CreateUserId();
-                string token = CreateToken(channelId, auth.ChannelKey, appid, userId, 
+                string token = CreateToken(channelId, auth.ChannelKey, appid, userId,
                     auth.Nonce, auth.Timestamp);
                 string username = String.Format(
                     "{0}?appid={1}&channel={2}&nonce={3}&timestamp={4}",
